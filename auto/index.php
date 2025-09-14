@@ -1,1 +1,0 @@
-<?php header("Location:/?page=home&title=Home"); ?>
