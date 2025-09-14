@@ -15,3 +15,4 @@ jobs:
         remote-user: opc
         private-ssh-key: ${{ secrets.SSH_KEY }}
         destination-path: /srv/www
+        rsync-options: --verbose
