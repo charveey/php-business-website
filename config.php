@@ -7,9 +7,9 @@ class Database
     public function __construct()
     {
         $servername = "localhost";
-        $username = "root";
+        $username = "postgres";
         $password = "";
-        $dbname = "business_website";
+        $dbname = "testdb";
 
         $this->conn = new mysqli($servername, $username, $password, $dbname);
 
