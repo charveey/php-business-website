@@ -13,5 +13,6 @@ jobs:
       with:
         target-server: 130.61.224.71
         remote-user: opc
+        become: true
         private-ssh-key: ${{ secrets.SSH_KEY }}
         destination-path: /srv/www
