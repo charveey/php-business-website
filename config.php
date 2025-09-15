@@ -8,7 +8,7 @@ class Database
     {
         $servername = "localhost";
         $username = "postgres";
-        $password = "";
+        $password = "securepassword";
         $dbname = "testdb";
 
         $this->conn = new mysqli($servername, $username, $password, $dbname);
