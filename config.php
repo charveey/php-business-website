@@ -6,23 +6,22 @@ class Database
 
     public function __construct()
     {
-        $servername = "localhost";
+        $dsn = "pgsql:host=localhost;dbname=testdb";
         $username = "postgres";
         $password = "securepassword";
-        $dbname = "testdb";
 
-        $this->conn = new mysqli($servername, $username, $password, $dbname);
-
-        if ($this->conn->connect_error) {
-            die("Connection failed: " . $this->conn->connect_error);
+        try {
+            $this->conn = new PDO($dsn, $username, $password, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+            ]);
+        } catch (PDOException $e) {
+            die("Connection failed: " . $e->getMessage());
         }
     }
 
     public function __destruct()
     {
-        if ($this->conn) {
-            $this->conn->close();
-        }
+        $this->conn = null;
     }
 
     function validate($value)
@@ -58,24 +57,15 @@ class Database
     }
     function eQuery($sql, $params = [])
     {
-        if ($stmt = $this->conn->prepare($sql)) {
-            if (!empty($params)) {
-                $types = str_repeat('s', count($params));
-                $stmt->bind_param($types, ...$params);
+        try {
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($params);
+            if (stripos($sql, 'SELECT') === 0) {
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
-
-            if ($stmt->execute()) {
-                if (strpos($sql, 'SELECT') === 0) {
-                    $result = $stmt->get_result();
-                    return $result->fetch_all(MYSQLI_ASSOC);
-                }
-                return true;
-            } else {
-                error_log("ERROR: " . $stmt->error);
-                return false;
-            }
-        } else {
-            error_log("ERROR: " . $this->conn->error);
+            return true;
+        } catch (PDOException $e) {
+            error_log("ERROR: " . $e->getMessage());
             return false;
         }
     }
@@ -83,17 +73,17 @@ class Database
 
     public function executeQuery($sql)
     {
-        $result = $this->conn->query($sql);
-        if ($result === false) {
-            die("ERROR: " . $this->conn->error);
+        try {
+            return $this->conn->query($sql);
+        } catch (PDOException $e) {
+            die("ERROR: " . $e->getMessage());
         }
-        return $result;
     }
 
     public function select($table, $columns = "*", $condition = "")
     {
         $sql = "SELECT $columns FROM $table $condition";
-        return $this->executeQuery($sql)->fetch_all(MYSQLI_ASSOC);
+        return $this->executeQuery($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getById($table, $id)
@@ -107,23 +97,23 @@ class Database
     function insert($table, $data)
     {
         $columns = implode(", ", array_keys($data));
-        $values = implode(", ", array_map(function ($item) {
-            return "'" . addslashes($item) . "'";
-        }, array_values($data)));
-
-        $sql = "INSERT INTO $table ($columns) VALUES ($values)";
-        return $this->executeQuery($sql);
+        $placeholders = implode(", ", array_fill(0, count($data), '?'));
+        $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
+        $this->eQuery($sql, array_values($data));
+        return $this->lastInsertId();
     }
 
     public function update($table, $data, $condition = "")
     {
         $set = '';
+        $params = [];
         foreach ($data as $key => $value) {
-            $set .= "$key = '$value', ";
+            $set .= "$key = ?, ";
+            $params[] = $value;
         }
         $set = rtrim($set, ', ');
         $sql = "UPDATE $table SET $set $condition";
-        return $this->executeQuery($sql);
+        return $this->eQuery($sql, $params);
     }
 
     public function delete($table, $condition = "")
@@ -140,20 +130,20 @@ class Database
     public function login($username, $password, $table)
     {
         $username = $this->validate($username);
-        $condition = "WHERE username = '" . $username . "' AND password = '" . $this->hashPassword($password) . "'";
-        return $this->select($table, "*", $condition);
+        $sql = "SELECT * FROM $table WHERE username = ? AND password = ?";
+        return $this->eQuery($sql, [$username, $this->hashPassword($password)]);
     }
 
     public function count($table)
     {
         $userId = $_SESSION['id'];
-        $result = $this->executeQuery("SELECT COUNT(*) AS total_elements FROM $table WHERE user_id = $userId");
-        $row = $result->fetch_assoc();
-        return $row['total_elements'];
+        $sql = "SELECT COUNT(*) AS total_elements FROM $table WHERE user_id = ?";
+        $result = $this->eQuery($sql, [$userId]);
+        return $result[0]['total_elements'];
     }
 
     function lastInsertId()
     {
-        return $this->conn->insert_id;
+        return $this->conn->lastInsertId();
     }
 }
