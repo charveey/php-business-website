@@ -1,0 +1,13 @@
+*.gitignore
+*.gitmodules
+*.git
+*.gitkeep
+*.github
+ 
+/bin
+*rsync-ignore.txt
+ 
+/uploads
+/upgrade
+/themes/index.php
+/plugins/index.php

@@ -11,7 +11,7 @@ jobs:
     - name: 📂 Sync Files
       uses: burnett01/rsync-deployments@7.1.0
       with:
-        switches: -avzr --delete-after --ignore-errors -O
+        switches: -chvzr --delete-after --ignore-errors -O --exclude-from=rsync-ignore.txt
         path: "./"
         remote_path: ${{ secrets.SERVER_DESTINATION }}
         remote_host: ${{ secrets.SERVER_IP }}
