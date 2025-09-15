@@ -89,7 +89,7 @@ define( 'WP_DEBUG', false );
 
 /* Add any custom values between this line and the "stop editing" line. */
 
-
+@ini_set('upload_max_size' , '256M' );
 
 /* That's all, stop editing! Happy publishing. */
 
